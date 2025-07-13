@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import random
-import items
+import Data.items as items
 
 def run_simulation():
     try:
