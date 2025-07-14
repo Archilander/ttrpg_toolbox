@@ -1,12 +1,11 @@
 import tkinter as tk
-from tkinter import messagebox
-import random
+from tkinter import messagebox, ttk
 import Data.items as items
 
 def run_simulation():
     try:
-        # Get values from input fields
-        bace_cost = float(entry_bace_cost.get()) / 2
+        scalar = 3
+        bace_cost = float(entry_bace_cost.get()) / scalar
         skill = int(entry_skill.get()) + int(entry_skill_mod.get())
         DC = int(entry_dc.get())
 
@@ -35,7 +34,7 @@ def run_simulation():
             time_label.config(text=f"Average Crafting Cost: N/A")
         else:
             p_bad = bad_failures / successes
-            expected_penalty = p_bad * (bace_cost / 2)
+            expected_penalty = p_bad * (bace_cost / scalar)
 
             avg_cost = bace_cost + expected_penalty
             total_cp = round(avg_cost * 100) 
@@ -95,12 +94,12 @@ class AutocompleteEntry(tk.Entry):
             return
 
         entry_width = self.winfo_width()
-        self.listbox = tk.Listbox(width=0)  # width=0 allows it to auto-expand if using `place` + `config`
+        self.listbox = tk.Listbox(width=0)
 
         self.listbox.place(
             x=self.winfo_x(),
             y=self.winfo_y() + self.winfo_height(),
-            width=entry_width * 2  # Span ~2 columns
+            width=entry_width * 2
         )
         self.listbox.bind("<ButtonRelease-1>", self.on_listbox_click)
         self.listbox.bind("<Return>", self.on_listbox_enter)
@@ -144,72 +143,82 @@ def populate_fields(item_name):
     entry_dc.delete(0, tk.END)
     entry_dc.insert(0, f"{dc}")
 
-# Set up GUI window
+# ** GUI **
 root = tk.Tk()
 root.title("Crafting Cost Simulator")
-# root.geometry("400x300")
 root.resizable(False, False)
 
-# DC row
-predefined_items = items.fetch_item()
-tk.Label(root, text="Item:").grid(row=0, column=0, sticky="e", pady=2)
-entry_item = AutocompleteEntry(predefined_items, root, callback=populate_fields)
-entry_item.insert(0, predefined_items[0])
-entry_item.grid(row=0, column=1, columnspan=2, sticky="we", pady=2)
 
-# Spacer
-tk.Label(root, text="").grid(row=1)
+# ** Result Frame **
+result_frame = ttk.Frame(root)
+result_frame.pack(padx=10, pady=5, fill='x')
 
-tk.Label(root, text="DC:").grid(row=2, column=0, sticky="e")
-entry_dc = tk.Entry(root)
-entry_dc.insert(0, "0")
-entry_dc.grid(row=2, column=1, columnspan=2, sticky="we")
+cost_frame = ttk.Frame(result_frame)
+cost_frame.pack(anchor="center")
 
-# Cost row
-tk.Label(root, text="Cost (GP)").grid(row=3, column=0, sticky="e")
-entry_bace_cost = tk.Entry(root)
-entry_bace_cost.insert(0, "0")
-entry_bace_cost.grid(row=3, column=1, columnspan=2, sticky="we")
-
-# Header row
-tk.Label(root, text="").grid(row=4, column=0)
-tk.Label(root, text="Base").grid(row=4, column=1)
-tk.Label(root, text="Modifier").grid(row=4, column=2)
-
-# Skill input (below modifier)
-tk.Label(root, text="Skill:").grid(row=5, column=0, sticky="e")
-entry_skill = tk.Entry(root)
-entry_skill.insert(0, "0")
-entry_skill.grid(row=5, column=1, sticky="we")
-
-entry_skill_mod = tk.Entry(root)
-entry_skill_mod.insert(0, "0")
-entry_skill_mod.grid(row=5, column=2, sticky="we")
-
-tk.Label(root, text="Special Material cost:").grid(row=6, column=0, sticky="e")
-material_mod = tk.Entry(root)
-material_mod.insert(0, "0")
-material_mod.grid(row=6, column=1, columnspan=2, sticky="we")
-
-# Run simulation button
-tk.Button(root, text="Calculate", command=run_simulation).grid(row=7, column=0, columnspan=3, pady=10)
-
-# Result label
-result_frame = tk.Frame(root)
-result_frame.grid(row=8, column=0, columnspan=3)
-
-label_prefix = tk.Label(result_frame, text="Average Crafting Cost: ")
-label_gp = tk.Label(result_frame, text="0", fg="gold", font=("Helvetica", 10, "bold"))
-label_sp = tk.Label(result_frame, text="0", fg="gray", font=("Helvetica", 10, "bold"))
-label_cp = tk.Label(result_frame, text="0", fg="sienna", font=("Helvetica", 10, "bold"))
+label_prefix = tk.Label(cost_frame, text="Average Crafting Cost: ")
+label_gp = tk.Label(cost_frame, text="0", fg="#b8860b", font=("Helvetica", 10, "bold"))
+label_sp = tk.Label(cost_frame, text="0", fg="dim gray", font=("Helvetica", 10, "bold"))
+label_cp = tk.Label(cost_frame, text="0", fg="sienna", font=("Helvetica", 10, "bold"))
 
 label_prefix.pack(side="left")
-label_gp.pack(side="left")
-label_sp.pack(side="left")
-label_cp.pack(side="left")
+label_gp.pack(side="left", padx=(5, 0))
+label_sp.pack(side="left", padx=(5, 0))
+label_cp.pack(side="left", padx=(5, 0))
+
+time_label = ttk.Label(result_frame, text="Estimated Crafting Time:")
+time_label.pack(anchor="center", pady=(5, 0))
 
 
-time_label = tk.Label(root, text="Estimated Crafting Time: ")
-time_label.grid(row=9, column=0, columnspan=3)
+# ** DC Frame **
+frame_dc = ttk.LabelFrame(root, text="Item search")
+frame_dc.pack(padx=10, pady=5, fill='x')
+
+predefined_items = items.fetch_item()
+ttk.Label(frame_dc, text="Search:").grid(row=0, column=0, sticky="e", pady=2)
+entry_item = AutocompleteEntry(predefined_items, frame_dc, callback=populate_fields)
+entry_item.insert(0, predefined_items[0])
+entry_item.grid(row=0, column=1, columnspan=3, sticky="we", pady=2)
+
+tk.Label(frame_dc, text="DC:").grid(row=1, column=0, sticky="e")
+entry_dc = tk.Entry(frame_dc)
+entry_dc.insert(0, "0")
+entry_dc.grid(row=1, column=1, sticky="we")
+
+tk.Label(frame_dc, text="Cost (GP)").grid(row=1, column=2, sticky="e")
+entry_bace_cost = tk.Entry(frame_dc)
+entry_bace_cost.insert(0, "0")
+entry_bace_cost.grid(row=1, column=3, sticky="we")
+frame_dc.columnconfigure((1, 3), weight=1)
+
+# ** Player Skill Frame **
+frame_skill = ttk.LabelFrame(root, text="Player Skill & Options")
+frame_skill.pack(padx=10, pady=5, fill='x')
+
+tk.Label(frame_skill, text="").grid(row=0, column=0)
+tk.Label(frame_skill, text="Base").grid(row=0, column=2)
+tk.Label(frame_skill, text="Modifier").grid(row=0, column=3)
+
+tk.Label(frame_skill, text="Skill:").grid(row=1, column=0, columnspan=2, sticky="e")
+entry_skill = tk.Entry(frame_skill)
+entry_skill.insert(0, "0")
+entry_skill.grid(row=1, column=2, sticky="we")
+
+entry_skill_mod = tk.Entry(frame_skill)
+entry_skill_mod.insert(0, "0")
+entry_skill_mod.grid(row=1, column=3, sticky="we")
+
+frame_skill.columnconfigure((2, 3), weight=1)
+
+
+# ** Button Frame **
+btn_frame = ttk.Frame(root)
+btn_frame.pack(padx=10, pady=10, fill='x')
+
+calculate_button = tk.Button(btn_frame, text="Calculate", command=run_simulation)
+calculate_button.grid(row=0, column=0)
+btn_frame.columnconfigure(0, weight=1)
+calculate_button.pack(anchor="center")
 
 root.mainloop()
+
