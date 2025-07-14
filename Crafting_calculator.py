@@ -4,14 +4,55 @@ import Data.items as items
 
 def run_simulation():
     try:
-        scalar = 3
+        _, _, i_type, quant, double  = items.fetch_variables(entry_item.get())
+        scalar = 2
+        c_scalar = 3
         bace_cost = float(entry_bace_cost.get()) / scalar
         skill = int(entry_skill.get()) + int(entry_skill_mod.get())
-        DC = int(entry_dc.get())
+        DC = int(entry_dc.get()) + int(hurried_var.get())
+
+        def masterworking(i_type, quant, double, skill, scalar, c_scalar, hurry):
+            if i_type == "Weapon" or i_type == "Bow" or i_type == "Ammunition":
+                m_bad_failures = 0
+                m_successes = 0
+                for x in range(1, 21):
+                    roll_result = x + skill
+
+                    if roll_result >= (20 + hurry):
+                        m_successes += 1
+                    elif (20 + hurry) - roll_result >= 4:
+                        m_bad_failures += 1
+
+                if i_type == "Ammunition":
+                    m_bace_cost = 6 * quant / scalar
+                elif double == True:
+                    m_bace_cost = 600 / scalar
+                elif double == False:
+                    m_bace_cost = 300 / scalar
+
+                try:
+                    m_avg_craft_check = ((10.5-max(10.5, m_bad_failures) + skill) * (20 + hurry)) / c_scalar
+                    m_time_weeks = m_bace_cost / m_avg_craft_check
+                except:
+                    m_time_weeks = -1000000
+                
+                m_p_bad = m_bad_failures / m_successes
+                expected_penalty = m_p_bad * (m_bace_cost / scalar)
+                m_avg_cost = m_bace_cost + expected_penalty
+            else:
+                m_avg_cost = 0
+                m_time_weeks = -1000000
+            return m_avg_cost, m_time_weeks
+        
+        m_time = 0
+        m_price = 0
+        if int(masterwork_var.get()) == 1:
+            m_price, m_time = masterworking(i_type, quant, double, skill, scalar, c_scalar, int(hurried_var.get()))
+        print(m_price, m_time)
+
 
         bad_failures = 0
         successes = 0
-
         for x in range(1, 21):
             roll_result = x + skill
 
@@ -22,12 +63,12 @@ def run_simulation():
 
         target_craft_cost = bace_cost
         try:
-            avg_craft_check = ((10.5-max(10.5, bad_failures) + skill) * DC) / 10
+            avg_craft_check = ((10.5-max(10.5, bad_failures) + skill) * DC) / c_scalar
             time_weeks = target_craft_cost / avg_craft_check
         except:
-            time_weeks = -1
+            time_weeks = -1000000
 
-        if successes == 0 or time_weeks < 0:
+        if successes == 0 or time_weeks < 0 or m_time < 0:
             label_gp.config(text=f"N/A")
             label_sp.config(text=f"N/A")
             label_cp.config(text=f"N/A")
@@ -36,13 +77,13 @@ def run_simulation():
             p_bad = bad_failures / successes
             expected_penalty = p_bad * (bace_cost / scalar)
 
-            avg_cost = bace_cost + expected_penalty
+            avg_cost = bace_cost + expected_penalty + m_price
             total_cp = round(avg_cost * 100) 
             GP = total_cp // 100
             SP = (total_cp % 100) // 10
             CP = total_cp % 10
 
-            total_minutes = int(time_weeks * 7 * 24 * 60)
+            total_minutes = int((time_weeks + m_time) * 7 * 24 * 60)
 
             minutes_in_month = 4 * 7 * 24 * 60
             minutes_in_week = 7 * 24 * 60
@@ -137,7 +178,7 @@ class AutocompleteEntry(tk.Entry):
             self.callback(selection) 
 
 def populate_fields(item_name):
-    price, dc = items.fetch_variables(item_name)
+    price, dc = items.fetch_variables(item_name)[:2]
     entry_bace_cost.delete(0, tk.END)
     entry_bace_cost.insert(0, f"{price}")
     entry_dc.delete(0, tk.END)
@@ -189,11 +230,14 @@ tk.Label(frame_dc, text="Cost (GP)").grid(row=1, column=2, sticky="e")
 entry_bace_cost = tk.Entry(frame_dc)
 entry_bace_cost.insert(0, "0")
 entry_bace_cost.grid(row=1, column=3, sticky="we")
-frame_dc.columnconfigure((1, 3), weight=1)
 
-# ** Player Skill Frame **
-frame_skill = ttk.LabelFrame(root, text="Player Skill & Options")
-frame_skill.pack(padx=10, pady=5, fill='x')
+
+skill_options_container = ttk.Frame(root)
+skill_options_container.pack(padx=10, pady=5, fill='x')
+
+# --- Player Skill Frame (left) ---
+frame_skill = ttk.LabelFrame(skill_options_container, text="Player Skill")
+frame_skill.grid(row=0, column=0, sticky="nwe", padx=(0, 10))
 
 tk.Label(frame_skill, text="").grid(row=0, column=0)
 tk.Label(frame_skill, text="Base").grid(row=0, column=2)
@@ -208,7 +252,24 @@ entry_skill_mod = tk.Entry(frame_skill)
 entry_skill_mod.insert(0, "0")
 entry_skill_mod.grid(row=1, column=3, sticky="we")
 
-frame_skill.columnconfigure((2, 3), weight=1)
+# --- Options Frame (right) ---
+options_frame = ttk.LabelFrame(skill_options_container, text="Options")
+options_frame.grid(row=0, column=1, sticky="nwe")
+
+masterwork_var = tk.IntVar(value=0)
+masterwork_cb = ttk.Checkbutton(options_frame, text="Masterwork", variable=masterwork_var, onvalue=1, offvalue=0)
+masterwork_cb.state(['!alternate'])
+masterwork_cb.grid(row=0, column=0, sticky="w")
+
+hurried_var = tk.IntVar(value=0)
+hurried_cb = ttk.Checkbutton(options_frame, text="Hurried", variable=hurried_var, onvalue=10, offvalue=0)
+hurried_cb.state(['!alternate'])
+hurried_cb.grid(row=1, column=0, sticky="w")
+
+# Optional: let both frames grow if needed
+skill_options_container.columnconfigure(0, weight=1)
+skill_options_container.columnconfigure(1, weight=1)
+
 
 
 # ** Button Frame **
