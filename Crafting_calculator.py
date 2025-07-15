@@ -5,11 +5,12 @@ import Data.items as items
 def run_simulation():
     try:
         _, _, i_type, quant, double  = items.fetch_variables(entry_item.get())
-        scalar = 2
-        c_scalar = 3
-        bace_cost = float(entry_bace_cost.get()) / scalar
+        scalar = 3 * (1 / float(entry_cost_multy.get())) 
+        c_scalar = 1 / float(entry_speed_multy.get())
+        bace_cost = (float(entry_bace_cost.get()) + float(entry_material.get())) / scalar
         skill = int(entry_skill.get()) + int(entry_skill_mod.get())
-        DC = int(entry_dc.get()) + int(hurried_var.get())
+        DC = int(entry_dc.get()) + int(hurried_var.get()) + int(entry_dc_mod.get())
+
 
         def masterworking(i_type, quant, double, skill, scalar, c_scalar, hurry):
             if i_type == "Weapon" or i_type == "Bow" or i_type == "Ammunition":
@@ -31,7 +32,7 @@ def run_simulation():
                     m_bace_cost = 300 / scalar
 
                 try:
-                    m_avg_craft_check = ((10.5-max(10.5, m_bad_failures) + skill) * (20 + hurry)) / c_scalar
+                    m_avg_craft_check = ((10.5-max(10.5, m_bad_failures) + skill) * (20 + hurry)) * c_scalar
                     m_time_weeks = m_bace_cost / m_avg_craft_check
                 except:
                     m_time_weeks = -1000000
@@ -48,7 +49,6 @@ def run_simulation():
         m_price = 0
         if int(masterwork_var.get()) == 1:
             m_price, m_time = masterworking(i_type, quant, double, skill, scalar, c_scalar, int(hurried_var.get()))
-        print(m_price, m_time)
 
 
         bad_failures = 0
@@ -63,7 +63,7 @@ def run_simulation():
 
         target_craft_cost = bace_cost
         try:
-            avg_craft_check = ((10.5-max(10.5, bad_failures) + skill) * DC) / c_scalar
+            avg_craft_check = ((10.5-max(10.5, bad_failures) + skill) * DC) * c_scalar
             time_weeks = target_craft_cost / avg_craft_check
         except:
             time_weeks = -1000000
@@ -219,17 +219,17 @@ predefined_items = items.fetch_item()
 ttk.Label(frame_dc, text="Search:").grid(row=0, column=0, sticky="e", pady=2)
 entry_item = AutocompleteEntry(predefined_items, frame_dc, callback=populate_fields)
 entry_item.insert(0, predefined_items[0])
-entry_item.grid(row=0, column=1, columnspan=3, sticky="we", pady=2)
+entry_item.grid(row=0, column=1, columnspan=3, sticky="we", pady=2, padx=8)
 
 tk.Label(frame_dc, text="DC:").grid(row=1, column=0, sticky="e")
-entry_dc = tk.Entry(frame_dc)
+entry_dc = tk.Entry(frame_dc, width=17)
 entry_dc.insert(0, "0")
-entry_dc.grid(row=1, column=1, sticky="we")
+entry_dc.grid(row=1, column=1, sticky="we", pady=8, padx=8)
 
 tk.Label(frame_dc, text="Cost (GP)").grid(row=1, column=2, sticky="e")
-entry_bace_cost = tk.Entry(frame_dc)
+entry_bace_cost = tk.Entry(frame_dc, width=17)
 entry_bace_cost.insert(0, "0")
-entry_bace_cost.grid(row=1, column=3, sticky="we")
+entry_bace_cost.grid(row=1, column=3, sticky="we", pady=8, padx=8)
 
 
 skill_options_container = ttk.Frame(root)
@@ -244,13 +244,13 @@ tk.Label(frame_skill, text="Base").grid(row=0, column=2)
 tk.Label(frame_skill, text="Modifier").grid(row=0, column=3)
 
 tk.Label(frame_skill, text="Skill:").grid(row=1, column=0, columnspan=2, sticky="e")
-entry_skill = tk.Entry(frame_skill)
-entry_skill.insert(0, "0")
-entry_skill.grid(row=1, column=2, sticky="we")
+entry_skill = tk.Entry(frame_skill, width=16)
+entry_skill.insert(0, "1")
+entry_skill.grid(row=1, column=2, sticky="we", pady=8)
 
-entry_skill_mod = tk.Entry(frame_skill)
+entry_skill_mod = tk.Entry(frame_skill, width=16)
 entry_skill_mod.insert(0, "0")
-entry_skill_mod.grid(row=1, column=3, sticky="we")
+entry_skill_mod.grid(row=1, column=3, sticky="we", pady=8)
 
 # --- Options Frame (right) ---
 options_frame = ttk.LabelFrame(skill_options_container, text="Options")
@@ -259,18 +259,40 @@ options_frame.grid(row=0, column=1, sticky="nwe")
 masterwork_var = tk.IntVar(value=0)
 masterwork_cb = ttk.Checkbutton(options_frame, text="Masterwork", variable=masterwork_var, onvalue=1, offvalue=0)
 masterwork_cb.state(['!alternate'])
-masterwork_cb.grid(row=0, column=0, sticky="w")
+masterwork_cb.grid(row=0, column=0, sticky="w", pady=3)
 
 hurried_var = tk.IntVar(value=0)
 hurried_cb = ttk.Checkbutton(options_frame, text="Hurried", variable=hurried_var, onvalue=10, offvalue=0)
 hurried_cb.state(['!alternate'])
-hurried_cb.grid(row=1, column=0, sticky="w")
+hurried_cb.grid(row=1, column=0, sticky="w", pady=4)
 
 # Optional: let both frames grow if needed
 skill_options_container.columnconfigure(0, weight=1)
 skill_options_container.columnconfigure(1, weight=1)
 
+# --- GM options ---
+frame_gm = ttk.LabelFrame(root, text="GM options")
+frame_gm.pack(padx=10, pady=5, fill='x')
 
+tk.Label(frame_gm, text="Material Cost:").grid(row=0, column=0, sticky="e")
+entry_material = tk.Entry(frame_gm, width=10)
+entry_material.insert(0, "0")
+entry_material.grid(row=0, column=1, sticky="we", padx=8)
+
+tk.Label(frame_gm, text="DC Modifier:").grid(row=0, column=2, sticky="e")
+entry_dc_mod = tk.Entry(frame_gm, width=10)
+entry_dc_mod.insert(0, "0")
+entry_dc_mod.grid(row=0, column=3, sticky="we", padx=8)
+
+tk.Label(frame_gm, text="Time Multiplyer:").grid(row=1, column=0, sticky="e")
+entry_speed_multy = tk.Entry(frame_gm, width=10)
+entry_speed_multy.insert(0, "2")
+entry_speed_multy.grid(row=1, column=1, sticky="we", pady=8, padx=8)
+
+tk.Label(frame_gm, text="Cost Multiplyer:").grid(row=1, column=2, sticky="e")
+entry_cost_multy = tk.Entry(frame_gm, width=10)
+entry_cost_multy.insert(0, "1.7")
+entry_cost_multy.grid(row=1, column=3, sticky="we", pady=8, padx=8)
 
 # ** Button Frame **
 btn_frame = ttk.Frame(root)

@@ -1,6 +1,6 @@
 item_dict = {
     "": 
-        {"price": 0, "DC": 0, "Type": "None", "Quantity": 1, "Double": False},
+        {"price": 0, "DC": 0, "Type": "None", "Skill": "None", "Quantity": 1, "Double": False},
 
     # Simple weapons
     "Gauntlet": 
